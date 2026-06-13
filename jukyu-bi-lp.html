@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>需給BIツール — 自動車販売店 経営者向け</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.34.0/tabler-icons.min.css">
+<style>
+:root{
+  --font-sans:"Helvetica Neue","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;
+  --color-text-primary:#1f1f1d;
+  --color-text-secondary:#6b6b66;
+  --color-background-primary:#ffffff;
+  --color-background-secondary:#f7f6f2;
+  --color-border-tertiary:rgba(31,31,29,.13);
+  --color-border-secondary:rgba(31,31,29,.26);
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary);line-height:1.7;-webkit-font-smoothing:antialiased}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.pg{max-width:760px;margin:0 auto;border-left:.5px solid var(--color-border-tertiary);border-right:.5px solid var(--color-border-tertiary)}
+.inn{max-width:660px;margin:0 auto;padding:0 2rem}
+.rule{height:.5px;background:var(--color-border-tertiary)}
+.rule-b{height:.5px;background:var(--color-border-secondary)}
+.lbl{font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--color-text-secondary)}
+.gwrap{position:relative;overflow:hidden}
+.gnum{position:absolute;top:-.1em;left:1.8rem;font-size:108px;font-weight:500;line-height:1;opacity:.04;color:var(--color-text-primary);pointer-events:none;user-select:none;font-variant-numeric:tabular-nums}
+.gcnt{position:relative;z-index:1}
+.sec-hd{display:flex;align-items:center;gap:12px;margin-bottom:2rem}
+
+.doc-hd{padding:.875rem 2rem;border-bottom:.5px solid var(--color-border-secondary)}
+.doc-hd-in{max-width:660px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+
+.hero{padding:4rem 0 3.5rem}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;border:.5px solid var(--color-border-secondary);border-radius:2px;padding:4px 10px;margin-bottom:1.5rem}
+.hero-h{font-size:30px;font-weight:500;line-height:1.38;letter-spacing:-.01em;margin-bottom:1.25rem}
+.hero-body{font-size:14px;color:var(--color-text-secondary);line-height:1.85;max-width:480px;margin-bottom:2rem;border-left:2px solid #1C3456;padding-left:1rem}
+
+.prob-sec{padding:3.5rem 0;background:var(--color-background-secondary)}
+.prob-row{display:grid;grid-template-columns:80px 1fr;gap:1.5rem;padding:1.25rem 0;border-bottom:.5px solid var(--color-border-tertiary);align-items:start}
+.prob-row:last-child{border-bottom:none}
+.prob-num{font-size:36px;font-weight:500;line-height:1;color:#1C3456;font-variant-numeric:tabular-nums;opacity:.15}
+
+.dash-sec{padding:3.5rem 0}
+.dash-frame{background:#182640;border-radius:6px;overflow:hidden}
+.dash-chrome{background:#111d30;padding:.5rem 1rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.dash-dot{width:8px;height:8px;border-radius:50%}
+.dash-body{padding:1.5rem}
+.dash-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.dash-brand{font-size:9px;font-weight:500;letter-spacing:.1em;color:#7A4F3A;margin-bottom:4px}
+.dash-title{font-size:14px;font-weight:500;color:#fff}
+.dash-date{font-size:9px;color:rgba(255,255,255,.25);text-align:right;line-height:1.6}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
+.kpi{padding:.875rem;background:rgba(255,255,255,.04);border-top:2px solid rgba(255,255,255,.08)}
+.kpi.alert{border-top-color:#7A3030}
+.kpi.warn{border-top-color:#8B6A1E}
+.kpi.ok{border-top-color:#1D6E50}
+.kpi-l{font-size:9px;letter-spacing:.07em;color:rgba(255,255,255,.35);margin-bottom:.5rem;font-weight:500}
+.kpi-v{font-size:24px;font-weight:500;color:#fff;line-height:1;font-variant-numeric:tabular-nums}
+.kpi-u{font-size:11px;font-weight:400;opacity:.6}
+.kpi-s{font-size:9px;color:rgba(255,255,255,.25);margin-top:5px}
+.chart-sec{margin-bottom:1.25rem}
+.chart-ttl{font-size:9px;letter-spacing:.08em;color:rgba(255,255,255,.3);margin-bottom:.875rem;font-weight:500;padding-bottom:.5rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.chart-legend{display:flex;gap:14px;margin-bottom:.75rem}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:9px;color:rgba(255,255,255,.35)}
+.leg-rect{width:10px;height:4px;border-radius:1px;flex-shrink:0}
+.cr{display:grid;grid-template-columns:88px 1fr 40px;align-items:center;gap:8px;margin-bottom:7px}
+.cr-label{font-size:10px;color:rgba(255,255,255,.5);text-align:right}
+.cr-bars{display:flex;flex-direction:column;gap:3px}
+.bar-t{height:7px;background:rgba(255,255,255,.06);border-radius:1px;overflow:hidden}
+.bar-f{height:100%;border-radius:1px}
+.d-bar{background:#7A3030}
+.s-bar{background:rgba(255,255,255,.2)}
+.cr-gap{font-size:10px;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.g-short{color:#c47474}
+.g-over{color:#c4a84a}
+.g-ok{color:#4a9e7e}
+.lead-row{display:grid;grid-template-columns:90px 1fr 36px;align-items:center;gap:8px;margin-bottom:7px}
+.lead-l{font-size:10px;color:rgba(255,255,255,.4)}
+.lead-t{height:6px;background:rgba(255,255,255,.05);border-radius:1px;overflow:hidden}
+.lead-f{height:100%;border-radius:1px}
+.lead-v{font-size:10px;color:rgba(255,255,255,.35);text-align:right;font-variant-numeric:tabular-nums}
+
+.ba-sec{padding:3.5rem 0;background:var(--color-background-secondary)}
+.ba-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--color-border-tertiary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.ba-col{padding:1.5rem;background:var(--color-background-primary)}
+.ba-col-hd{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;padding-bottom:.875rem;border-bottom:.5px solid var(--color-border-tertiary)}
+.ba-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ba-item{display:flex;gap:8px;margin-bottom:.875rem;align-items:flex-start}
+.ba-item:last-child{margin-bottom:0}
+
+.voice-sec{padding:3.5rem 0}
+.voice-card{display:grid;grid-template-columns:128px 1fr;gap:1.75rem;align-items:center;border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.75rem;background:var(--color-background-primary)}
+.voice-quote{font-size:17px;font-weight:500;line-height:1.7;letter-spacing:-.005em;margin-bottom:1rem;color:var(--color-text-primary)}
+.voice-meta{display:flex;align-items:center;gap:10px;padding-top:1rem;border-top:.5px solid var(--color-border-tertiary);margin-top:1rem}
+
+.proc-sec{padding:3.5rem 0;background:var(--color-background-secondary)}
+.proc-row{display:grid;grid-template-columns:48px 1fr;gap:1rem;padding:1.25rem 0;border-bottom:.5px solid var(--color-border-tertiary);align-items:start}
+.proc-row:last-child{border-bottom:none}
+.proc-n{font-size:28px;font-weight:500;color:#1C3456;line-height:1;font-variant-numeric:tabular-nums;opacity:.5}
+
+.cta-sec{padding:4rem 0 5rem;text-align:center;border-top:2px solid #1C3456}
+.cta-btn{display:inline-flex;align-items:center;gap:10px;background:#1C3456;color:#fff;border:none;padding:14px 32px;font-size:15px;font-weight:500;cursor:pointer;letter-spacing:.02em;border-radius:2px;transition:opacity .15s}
+.cta-btn:hover{opacity:.88}
+
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .voice-card{grid-template-columns:1fr;text-align:center}
+  .voice-fig{margin:0 auto}
+  .hero-h{font-size:25px}
+  .gnum{font-size:80px}
+}
+</style>
+</head>
+<body>
+<h2 class="sr-only">需給BIツール — ビジネス・スタンダード エディトリアル提案資料</h2>
+
+<div class="pg">
+
+<div class="doc-hd">
+  <div class="doc-hd-in">
+    <div style="display:flex;align-items:center;gap:14px">
+      <p style="font-size:13px;font-weight:500;color:var(--color-text-primary);letter-spacing:.02em">需給BIツール</p>
+      <span style="width:.5px;height:12px;background:var(--color-border-secondary)"></span>
+      <p class="lbl">製品概要 — 自動車販売店 経営者向け</p>
+    </div>
+    <p class="lbl">2026.06</p>
+  </div>
+</div>
+
+<!-- 01 Hero -->
+<div class="gwrap">
+  <span class="gnum" aria-hidden="true">01</span>
+  <div class="gcnt inn">
+    <div class="hero">
+      <div class="hero-tag">
+        <span class="lbl">ISSUE</span>
+        <span style="width:.5px;height:10px;background:var(--color-border-secondary)"></span>
+        <span class="lbl">経営の意思決定</span>
+      </div>
+      <h1 class="hero-h">なぜあの車は売れて、<br>この車は残り続けるのか。</h1>
+      <p class="hero-body">仕入れの判断がデータに基づかないとき、在庫は積み上がり、売掛回収が遅れ、資金繰りは悪化する。需給BIツールは「ズレ」を定量化し、経営判断を可視化します。</p>
+      <a href="#contact" class="cta-btn" style="font-size:14px;padding:11px 24px;text-decoration:none">
+        詳細を確認する <i class="ti ti-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="rule-b"></div>
+
+<!-- 02 Problem -->
+<div class="gwrap prob-sec">
+  <span class="gnum" style="opacity:.03" aria-hidden="true">02</span>
+  <div class="gcnt inn">
+    <div class="sec-hd"><span class="lbl">02 — PROBLEM</span><div class="rule" style="flex:1"></div></div>
+    <div>
+      <div class="prob-row">
+        <div class="prob-num">01</div>
+        <div>
+          <p style="font-size:16px;font-weight:500;margin-bottom:.5rem">仕入れた車が長期在庫になる</p>
+          <p style="font-size:13px;line-height:1.8;color:var(--color-text-secondary)">色・グレードの需要を読み誤ると、在庫が数ヶ月にわたって滞留する。そのたびに次の仕入れ資金が縛られる。</p>
+        </div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-num">02</div>
+        <div>
+          <p style="font-size:16px;font-weight:500;margin-bottom:.5rem">売掛回収までのサイクルが見えない</p>
+          <p style="font-size:13px;line-height:1.8;color:var(--color-text-secondary)">仕入→納車→販売→回収まで平均87日。そのサイクルを把握しないまま発注を続けると、資金繰りが後手に回る。</p>
+        </div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-num">03</div>
+        <div>
+          <p style="font-size:16px;font-weight:500;margin-bottom:.5rem">需給のデータが経営に活かされていない</p>
+          <p style="font-size:13px;line-height:1.8;color:var(--color-text-secondary)">仕入データと販売データは社内に存在しているにも関わらず、分断されたまま。経営判断は担当者の経験と勘に頼っている。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- 03 Solution + Dashboard -->
+<div class="gwrap dash-sec">
+  <span class="gnum" style="opacity:.03" aria-hidden="true">03</span>
+  <div class="gcnt inn">
+    <div class="sec-hd"><span class="lbl">03 — SOLUTION</span><div class="rule" style="flex:1"></div></div>
+    <h2 style="font-size:22px;font-weight:500;margin-bottom:.625rem">需給の「ズレ」を、経営ダッシュボードで定量化する</h2>
+    <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.8;margin-bottom:1.75rem;max-width:520px">仕入・販売データを統合し、車種・グレード・色ごとの需給ギャップと資金回収サイクルをリアルタイムで可視化。次の仕入れ判断をデータで裏付けます。</p>
+
+    <div class="dash-frame">
+      <div class="dash-chrome">
+        <div class="dash-dot" style="background:#3a3a3a"></div>
+        <div class="dash-dot" style="background:#3a3a3a"></div>
+        <div class="dash-dot" style="background:#3a3a3a"></div>
+        <span style="font-size:9px;color:rgba(255,255,255,.2);margin-left:8px;letter-spacing:.05em">需給BIツール — 経営ダッシュボード</span>
+      </div>
+      <div class="dash-body">
+        <div class="dash-hd">
+          <div>
+            <div class="dash-brand">JUKYU BI TOOL</div>
+            <div class="dash-title">2026年6月 月次経営レポート</div>
+          </div>
+          <div class="dash-date">最終更新<br>2026.06.13 09:00<br><span style="color:rgba(255,255,255,.15)">自動同期</span></div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi alert">
+            <div class="kpi-l">在庫回転日数</div>
+            <div class="kpi-v">87<span class="kpi-u"> 日</span></div>
+            <div class="kpi-s">目標 60日 ／ +27日超過</div>
+          </div>
+          <div class="kpi warn">
+            <div class="kpi-l">売掛残高</div>
+            <div class="kpi-v">¥42<span class="kpi-u">M</span></div>
+            <div class="kpi-s">回収予定 45日後</div>
+          </div>
+          <div class="kpi ok">
+            <div class="kpi-l">需給マッチ率</div>
+            <div class="kpi-v">61<span class="kpi-u">%</span></div>
+            <div class="kpi-s">前月比 +8pt</div>
+          </div>
+        </div>
+
+        <div class="chart-sec">
+          <div class="chart-ttl">需給ギャップ分析 — 車種・グレード・色別</div>
+          <div class="chart-legend">
+            <div class="leg-item"><div class="leg-rect" style="background:#7A3030"></div>需要</div>
+            <div class="leg-item"><div class="leg-rect" style="background:rgba(255,255,255,.2)"></div>在庫</div>
+          </div>
+          <div class="cr">
+            <div class="cr-label">SUV ／ ホワイト</div>
+            <div class="cr-bars"><div class="bar-t"><div class="bar-f d-bar" style="width:90%"></div></div><div class="bar-t"><div class="bar-f s-bar" style="width:26%"></div></div></div>
+            <div class="cr-gap g-short">−64%</div>
+          </div>
+          <div class="cr">
+            <div class="cr-label">セダン ／ ブラック</div>
+            <div class="cr-bars"><div class="bar-t"><div class="bar-f d-bar" style="width:38%"></div></div><div class="bar-t"><div class="bar-f s-bar" style="width:80%"></div></div></div>
+            <div class="cr-gap g-over">+42%</div>
+          </div>
+          <div class="cr">
+            <div class="cr-label">軽 ／ レッド</div>
+            <div class="cr-bars"><div class="bar-t"><div class="bar-f d-bar" style="width:62%"></div></div><div class="bar-t"><div class="bar-f s-bar" style="width:59%"></div></div></div>
+            <div class="cr-gap g-ok">±3%</div>
+          </div>
+          <div class="cr">
+            <div class="cr-label">ミニバン ／ シルバー</div>
+            <div class="cr-bars"><div class="bar-t"><div class="bar-f d-bar" style="width:76%"></div></div><div class="bar-t"><div class="bar-f s-bar" style="width:20%"></div></div></div>
+            <div class="cr-gap g-short">−56%</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="chart-ttl">資金回収サイクル — 仕入〜回収 リードタイム</div>
+          <div class="lead-row">
+            <div class="lead-l">仕入 → 納車</div>
+            <div class="lead-t"><div class="lead-f" style="width:24%;background:#7A3030"></div></div>
+            <div class="lead-v">21日</div>
+          </div>
+          <div class="lead-row">
+            <div class="lead-l">納車 → 販売</div>
+            <div class="lead-t"><div class="lead-f" style="width:48%;background:#8B6A1E"></div></div>
+            <div class="lead-v">42日</div>
+          </div>
+          <div class="lead-row">
+            <div class="lead-l">販売 → 回収</div>
+            <div class="lead-t"><div class="lead-f" style="width:28%;background:rgba(255,255,255,.18)"></div></div>
+            <div class="lead-v">24日</div>
+          </div>
+          <p style="font-size:9px;color:rgba(255,255,255,.15);margin-top:.875rem;text-align:right;letter-spacing:.04em">TOTAL LEAD TIME : 87 DAYS</p>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--color-text-secondary);margin-top:.75rem">※ 画面はイメージです。実際のデータは各社の実績値が自動反映されます。</p>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- 04 Before/After -->
+<div class="gwrap ba-sec">
+  <span class="gnum" style="opacity:.03" aria-hidden="true">04</span>
+  <div class="gcnt inn">
+    <div class="sec-hd"><span class="lbl">04 — BEFORE / AFTER</span><div class="rule" style="flex:1"></div></div>
+    <h2 style="font-size:22px;font-weight:500;margin-bottom:1.5rem">経営の判断軸が変わる</h2>
+    <div class="ba-grid">
+      <div class="ba-col">
+        <div class="ba-col-hd"><div class="ba-dot" style="background:#7A3030"></div><span style="font-size:11px;font-weight:500;letter-spacing:.06em;color:var(--color-text-secondary)">導入前</span></div>
+        <div class="ba-item"><i class="ti ti-minus" style="font-size:14px;color:var(--color-text-secondary);flex-shrink:0;margin-top:2px" aria-hidden="true"></i><p style="font-size:13px;line-height:1.7">担当者の経験と勘で仕入れ判断</p></div>
+        <div class="ba-item"><i class="ti ti-minus" style="font-size:14px;color:var(--color-text-secondary);flex-shrink:0;margin-top:2px" aria-hidden="true"></i><p style="font-size:13px;line-height:1.7">在庫が長期化してから問題に気づく</p></div>
+        <div class="ba-item"><i class="ti ti-minus" style="font-size:14px;color:var(--color-text-secondary);flex-shrink:0;margin-top:2px" aria-hidden="true"></i><p style="font-size:13px;line-height:1.7">資金繰りの予測が立たず、常に後手</p></div>
+      </div>
+      <div class="ba-col" style="background:var(--color-background-secondary)">
+        <div class="ba-col-hd"><div class="ba-dot" style="background:#1D6E50"></div><span style="font-size:11px;font-weight:500;letter-spacing:.06em;color:var(--color-text-secondary)">導入後</span></div>
+        <div class="ba-item"><i class="ti ti-check" style="font-size:14px;color:#1D6E50;flex-shrink:0;margin-top:2px" aria-hidden="true"></i><p style="font-size:13px;line-height:1.7">需要データから逆算して仕入れを決定</p></div>
+        <div class="ba-item"><i class="ti ti-check" style="font-size:14px;color:#1D6E50;flex-shrink:0;margin-top:2px" aria-hidden="true"></i><p style="font-size:13px;line-height:1.7">需給ギャップを事前に検知し先手を打つ</p></div>
+        <div class="ba-item"><i class="ti ti-check" style="font-size:14px;color:#1D6E50;flex-shrink:0;margin-top:2px" aria-hidden="true"></i><p style="font-size:13px;line-height:1.7">リードタイム把握で資金繰りを先読み</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- 05 Voice -->
+<div class="gwrap voice-sec">
+  <span class="gnum" style="opacity:.03" aria-hidden="true">05</span>
+  <div class="gcnt inn">
+    <div class="sec-hd"><span class="lbl">05 — VOICE</span><div class="rule" style="flex:1"></div></div>
+    <h2 style="font-size:22px;font-weight:500;margin-bottom:1.5rem">導入企業の声</h2>
+    <div class="voice-card">
+      <svg class="voice-fig" width="128" height="148" viewBox="0 0 128 148" role="img" aria-label="自動車販売店経営者のイラスト" style="flex-shrink:0">
+        <title>導入企業の経営者</title>
+        <rect x="0" y="0" width="128" height="148" rx="6" fill="#EDEBE6"/>
+        <rect x="14" y="118" width="100" height="30" fill="#D9D6CF"/>
+        <path d="M30 148 V126 C30 112 44 104 64 104 C84 104 98 112 98 126 V148 Z" fill="#3A4862"/>
+        <path d="M64 104 L52 148 L48 122 L64 110 Z" fill="#2E3A50"/>
+        <path d="M64 104 L76 148 L80 122 L64 110 Z" fill="#2E3A50"/>
+        <path d="M58 100 L64 116 L70 100 L66 96 L62 96 Z" fill="#C9CBD1"/>
+        <path d="M62 104 L64 112 L66 104 L64 108 Z" fill="#5A4A3A"/>
+        <rect x="55" y="88" width="18" height="18" fill="#E8C9A8"/>
+        <ellipse cx="64" cy="74" rx="22" ry="24" fill="#EDD2B2"/>
+        <path d="M42 70 C42 52 56 46 64 46 C72 46 86 52 86 70 C86 64 80 58 64 58 C48 58 42 64 42 70 Z" fill="#3A3632"/>
+        <ellipse cx="55" cy="74" rx="2.4" ry="3" fill="#3A3632"/>
+        <ellipse cx="73" cy="74" rx="2.4" ry="3" fill="#3A3632"/>
+        <path d="M50 68 Q55 65 60 68" stroke="#3A3632" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M68 68 Q73 65 78 68" stroke="#3A3632" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M59 84 Q64 87 69 84" stroke="#B08968" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <p class="voice-quote">「勘で仕入れていた頃が信じられない。<br>今は需給ギャップを見てから発注しています」</p>
+        <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.8;margin-bottom:0">在庫回転日数が改善し、資金繰りの見通しが立つようになりました。月次の経営会議では、このダッシュボードを開くのが習慣になっています。</p>
+        <div class="voice-meta">
+          <div style="width:4px;height:32px;background:#1C3456;flex-shrink:0"></div>
+          <div>
+            <p style="font-size:13px;font-weight:500;color:var(--color-text-primary)">中古車販売店 代表取締役</p>
+            <p style="font-size:11px;color:var(--color-text-secondary);margin-top:2px">年間取扱 約600台 ／ 関東圏</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--color-text-secondary);margin-top:.75rem">※ 想定される導入イメージです。</p>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- 06 Process -->
+<div class="gwrap proc-sec">
+  <span class="gnum" style="opacity:.03" aria-hidden="true">06</span>
+  <div class="gcnt inn">
+    <div class="sec-hd"><span class="lbl">06 — HOW IT WORKS</span><div class="rule" style="flex:1"></div></div>
+    <h2 style="font-size:22px;font-weight:500;margin-bottom:1.5rem">3ステップで運用開始</h2>
+    <div>
+      <div class="proc-row">
+        <div class="proc-n">01</div>
+        <div>
+          <p style="font-size:16px;font-weight:500;margin-bottom:.5rem">既存データを接続する</p>
+          <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.8">仕入・販売管理システムのデータをCSVまたはAPI連携でインポート。ITの専門知識は不要で、最短1営業日で設定完了。</p>
+        </div>
+      </div>
+      <div class="proc-row">
+        <div class="proc-n">02</div>
+        <div>
+          <p style="font-size:16px;font-weight:500;margin-bottom:.5rem">需給ギャップを把握する</p>
+          <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.8">車種・グレード・色ごとの在庫と需要を自動集計。「今すぐ仕入れるべき車」「処分を検討すべき在庫」が一画面で判断できる。</p>
+        </div>
+      </div>
+      <div class="proc-row">
+        <div class="proc-n">03</div>
+        <div>
+          <p style="font-size:16px;font-weight:500;margin-bottom:.5rem">資金繰りを先読みして動く</p>
+          <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.8">リードタイムと売掛残高をもとに、向こう90日のキャッシュフロー見通しを自動生成。月次の経営会議にそのまま使用できる。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 CTA -->
+<div class="cta-sec inn" id="contact">
+  <p class="lbl" style="margin-bottom:1rem">07 — CONTACT</p>
+  <h2 style="font-size:26px;font-weight:500;margin-bottom:.875rem;letter-spacing:-.01em">仕入れの「勘」を、<br>データの「根拠」に変える</h2>
+  <p style="font-size:14px;color:var(--color-text-secondary);line-height:1.85;margin-bottom:2rem;max-width:440px;margin-left:auto;margin-right:auto">現状の課題をお聞かせいただければ、貴社のデータ構成に合わせた導入プランをご提案します。</p>
+  <a href="mailto:shin06200721@gmail.com?subject=需給BIツール%20導入相談" class="cta-btn" style="text-decoration:none">
+    <i class="ti ti-mail" aria-hidden="true"></i>
+    導入を相談する
+  </a>
+  <p style="font-size:11px;color:var(--color-text-secondary);margin-top:1rem">資料請求・デモ画面の確認もお気軽にどうぞ</p>
+</div>
+
+</div>
+</body>
+</html>
