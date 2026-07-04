@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>需給バランス分析表 | グローバルフリート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1e293b;
+    --navy-dark: #0f172a;
+    --blue: #2563eb;
+    --sidebar-bg: #ffffff;
+    --sidebar-active: #eef2ff;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-sec: #64748b;
+    --text-mute: #94a3b8;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --yellow: #ca8a04;
+    --yellow-bg: #fef9c3;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    width: 230px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 22px 16px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 4px 8px 22px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .brand .logo {
+    width: 38px; height: 38px;
+    background: var(--navy);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px; flex-shrink: 0;
+  }
+  .brand .name { font-weight: 700; font-size: 14px; line-height: 1.3; }
+  .brand .sub { font-size: 10px; color: var(--text-mute); }
+
+  .nav { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-radius: 9px;
+    color: var(--text-sec);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background .15s, color .15s;
+  }
+  .nav-item .ico { font-size: 17px; width: 20px; text-align: center; }
+  .nav-item:hover { background: #f8fafc; }
+  .nav-item.active { background: var(--sidebar-active); color: var(--blue); font-weight: 700; }
+
+  .report-btn {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    margin: 14px 0;
+    transition: background .15s;
+  }
+  .report-btn:hover { background: var(--navy-dark); }
+  .nav-bottom { display: flex; flex-direction: column; gap: 3px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+  /* ============ MAIN ============ */
+  .main { flex: 1; padding: 28px 34px; overflow-x: auto; }
+  .topbar {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 20px; margin-bottom: 26px; flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 26px; font-weight: 900; letter-spacing: -.02em; }
+  .topbar .desc { color: var(--text-sec); font-size: 13px; margin-top: 4px; }
+  .top-actions { display: flex; gap: 10px; align-items: center; }
+  .pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--border);
+    padding: 10px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: border-color .15s;
+  }
+  .pill:hover { border-color: var(--blue); }
+  .pill.primary { background: var(--card); }
+
+  /* Tabs */
+  .tabs {
+    display: inline-flex; background: var(--card);
+    border: 1px solid var(--border); border-radius: 11px;
+    padding: 4px; margin-bottom: 22px; gap: 3px;
+  }
+  .tab {
+    padding: 9px 26px; border-radius: 8px;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+    color: var(--text-sec); border: none; background: none; font-family: inherit;
+    transition: all .15s;
+  }
+  .tab.active { background: var(--navy); color: #fff; }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .kpi-head {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--text-sec); font-size: 12.5px; font-weight: 500; margin-bottom: 12px;
+  }
+  .kpi-head .ico { font-size: 15px; color: var(--text-mute); }
+  .kpi-val { font-size: 30px; font-weight: 900; letter-spacing: -.02em; display: flex; align-items: baseline; gap: 8px; }
+  .kpi-val .delta { font-size: 13px; font-weight: 700; }
+  .delta.down { color: var(--red); }
+  .delta.up { color: var(--green); }
+  .delta.flat { color: var(--text-mute); }
+  .kpi-foot { font-size: 11.5px; color: var(--text-mute); margin-top: 8px; }
+  .kpi-val .unit { font-size: 13px; font-weight: 500; color: var(--text-sec); }
+  .kpi-val.alert { color: var(--red); }
+  .kpi-val.alert .lbl { font-size: 15px; font-weight: 700; }
+
+  /* Table card */
+  .table-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .table-head {
+    background: var(--navy); color: #fff;
+    padding: 15px 22px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .table-head .title { font-weight: 700; font-size: 15px; }
+  .table-head .badges { display: flex; gap: 8px; }
+  .table-head .badge {
+    background: rgba(255,255,255,.14); padding: 5px 11px;
+    border-radius: 7px; font-size: 11.5px; font-weight: 500;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 13px 22px;
+    font-size: 12px; font-weight: 700; color: var(--text-sec);
+    border-bottom: 1px solid var(--border); background: #f8fafc;
+    white-space: nowrap;
+  }
+  thead th.num { text-align: right; }
+  thead th.center { text-align: center; }
+  thead th { cursor: help; }
+  thead th .th-unit { font-weight: 400; color: var(--text-mute); }
+  .legend {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+    padding: 14px 22px; background: #f8fafc; border-top: 1px solid var(--border);
+    font-size: 12.5px; color: var(--text-sec);
+  }
+  .legend-title { font-weight: 700; color: var(--text); }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  tbody td { padding: 15px 22px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; }
+  tbody td.num { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+  tbody td.center { text-align: center; }
+  tbody tr:hover { background: #fafbfc; }
+  tbody tr:nth-child(even) { background: #fbfcfd; }
+  tbody tr:nth-child(even):hover { background: #f5f7fa; }
+  .cat-cell { font-weight: 700; color: var(--text); vertical-align: middle; }
+  .model-name { font-weight: 500; }
+
+  .status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+  }
+  .status.ok { background: var(--green-bg); color: var(--green); }
+  .status.warn { background: var(--yellow-bg); color: var(--yellow); }
+  .status.danger { background: var(--red-bg); color: var(--red); }
+
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .sidebar { width: 68px; }
+    .brand .name, .brand .sub, .nav-item span:not(.ico), .report-btn { display: none; }
+    .nav-item { justify-content: center; }
+  }
+  @media (max-width: 640px) {
+    .main { padding: 18px; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .topbar h1 { font-size: 21px; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .sidebar, .top-actions, .tabs { display: none !important; }
+    .main { padding: 0; }
+    .kpi { break-inside: avoid; }
+    .table-card { break-inside: avoid; border: 1px solid #000; }
+    thead th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .table-head { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">🚗</div>
+    <div>
+      <div class="name">グローバルフリート</div>
+      <div class="sub">経営管理スイート</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item"><span class="ico">▦</span><span>ダッシュボード</span></div>
+    <div class="nav-item active"><span class="ico">▤</span><span>在庫分析</span></div>
+    <div class="nav-item"><span class="ico">▥</span><span>販売分析</span></div>
+    <div class="nav-item"><span class="ico">⚙</span><span>供給体制</span></div>
+    <div class="nav-item"><span class="ico">▣</span><span>財務分析</span></div>
+    <div class="nav-item"><span class="ico">📈</span><span>市場動向</span></div>
+  </nav>
+  <button class="report-btn">レポート作成</button>
+  <div class="nav-bottom">
+    <div class="nav-item"><span class="ico">?</span><span>サポート</span></div>
+    <div class="nav-item"><span class="ico">⎋</span><span>ログアウト</span></div>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1>需給バランス分析表 <span id="tabLabel">(新車)</span></h1>
+      <div class="desc">需給バランス分析（<span id="tabDesc">新車</span>）</div>
+    </div>
+    <div class="top-actions">
+      <div class="pill">📅 2023年10月 - 2024年3月 ▾</div>
+      <div class="pill primary" onclick="exportPDF()">⬇ PDF出力</div>
+      <div class="pill primary" onclick="printPaper()">🖨 紙印刷</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="new">新車</button>
+    <button class="tab" data-tab="used">中古車</button>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-head">
+      <div class="title" id="tableTitle">ダイハツ 車種別分析</div>
+      <div class="badges">
+        <span class="badge">メーカー: ダイハツ</span>
+        <span class="badge">エリア: 関東</span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr id="tableHeadRow">
+          <th id="makerHeader" style="display:none" title="車を作っている会社名">メーカー</th>
+          <th title="車の種類のグループ分け（軽自動車・SUVなど）">カテゴリ</th>
+          <th title="具体的な車の名前">車種名</th>
+          <th class="num" title="対象期間中に実際に売れた台数">販売実績 <span class="th-unit">(台)</span></th>
+          <th class="num" title="いま店舗・倉庫にある在庫の台数">現在庫 <span class="th-unit">(台)</span></th>
+          <th class="num" title="在庫の合計金額（千円単位）">在庫金額 <span class="th-unit">(千円)</span></th>
+          <th class="num" title="在庫が売れるまでにかかる平均日数。数字が大きいほど売れ残り気味">回転日数 <span class="th-unit">(日)</span></th>
+          <th class="center" title="在庫が適正かどうかのひと目判定">ステータス</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="legend">
+      <span class="legend-title">ステータスの見方：</span>
+      <span class="legend-item"><span class="status ok">適正</span>在庫と販売のバランスが良い状態</span>
+      <span class="legend-item"><span class="status warn">注意</span>回転日数がやや長め・要チェック</span>
+      <span class="legend-item"><span class="status danger">●危険</span>在庫が売れ残っている／不足している可能性大</span>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ===== データ =====
+  const DATA = {
+    new: {
+      label: '(新車)', desc: '新車',
+      kpi: [
+        { title: '総在庫数', ico: '📋', val: '1,428', unit: '', delta: '-2.4%↓', dcls: 'down', foot: '目標: 1,500 台' },
+        { title: '平均回転日数', ico: '🕐', val: '32.5', unit: '', delta: '+1.2→', dcls: 'flat', foot: '目標: 30 日' },
+        { title: '在庫金額', ico: '🏷', val: '4,200,000', unit: '千円', delta: '安定', dcls: 'up', foot: '上限: 5,000,000 千円' },
+        { title: '在庫アラート', ico: '⚠', alert: true, val: '12', lbl: '危機的', foot: '4 過剰 / 8 不足' },
+      ],
+      rows: [
+        { cat: '軽乗用', model: 'ミライース', sales: 145, stock: 42, amount: '5,000', days: 28, st: 'ok', stLabel: '適正' },
+        { cat: '軽乗用', model: 'コペン', sales: 32, stock: 18, amount: '3,000', days: 54, st: 'warn', stLabel: '注意' },
+        { cat: '軽乗用', model: 'ムーヴ', sales: 189, stock: 75, amount: '12,000', days: 35, st: 'ok', stLabel: '適正' },
+        { cat: '軽乗用', model: 'ムーヴキャンバス', sales: 210, stock: 124, amount: '24,000', days: 62, st: 'danger', stLabel: '危険' },
+        { cat: '軽乗用', model: 'タント', sales: 342, stock: 88, amount: '18,000', days: 24, st: 'ok', stLabel: '適正' },
+        { cat: '軽乗用', model: 'タフト', sales: 156, stock: 31, amount: '6,000', days: 18, st: 'warn', stLabel: '注意' },
+        { cat: '軽商用', model: 'アトレー', sales: 94, stock: 22, amount: '4,000', days: 21, st: 'ok', stLabel: '適正' },
+        { cat: '軽商用', model: 'Eアトレー', sales: 27, stock: 15, amount: '3,300', days: 39, st: 'warn', stLabel: '注意' },
+        { cat: '軽商用', model: 'ハイゼットカーゴ', sales: 128, stock: 58, amount: '9,000', days: 41, st: 'warn', stLabel: '注意' },
+        { cat: '軽商用', model: 'Eハイゼットカーゴ', sales: 19, stock: 12, amount: '2,800', days: 45, st: 'warn', stLabel: '注意' },
+        { cat: '軽商用', model: 'ハイゼットトラック', sales: 167, stock: 45, amount: '7,500', days: 26, st: 'ok', stLabel: '適正' },
+        { cat: '登録車', model: 'ロッキー', sales: 98, stock: 67, amount: '15,000', days: 58, st: 'danger', stLabel: '危険' },
+        { cat: '登録車', model: 'トール', sales: 76, stock: 29, amount: '8,000', days: 33, st: 'ok', stLabel: '適正' },
+      ]
+    },
+    used: {
+      label: '(中古車)', desc: '中古車',
+      kpi: [
+        { title: '総在庫数', ico: '📋', val: '2,860', unit: '', delta: '+5.1%↑', dcls: 'up', foot: '目標: 2,700 台' },
+        { title: '平均回転日数', ico: '🕐', val: '45.8', unit: '', delta: '-3.4↓', dcls: 'up', foot: '目標: 45 日' },
+        { title: '在庫金額', ico: '🏷', val: '2,640,000', unit: '千円', delta: '注意', dcls: 'flat', foot: '上限: 3,000,000 千円' },
+        { title: '在庫アラート', ico: '⚠', alert: true, val: '19', lbl: '要確認', foot: '11 過剰 / 8 不足' },
+      ],
+      rows: [
+        { maker: 'ダイハツ', cat: '軽乗用', model: 'タント (中古)', sales: 88, stock: 134, amount: '13,400', days: 72, st: 'danger', stLabel: '危険' },
+        { maker: 'ダイハツ', cat: '軽乗用', model: 'ムーヴ (中古)', sales: 112, stock: 96, amount: '9,600', days: 51, st: 'warn', stLabel: '注意' },
+        { maker: 'ホンダ', cat: '軽乗用', model: 'N-BOX (中古)', sales: 203, stock: 78, amount: '15,600', days: 34, st: 'ok', stLabel: '適正' },
+        { maker: 'ホンダ', cat: 'コンパクト', model: 'フィット (中古)', sales: 98, stock: 41, amount: '11,300', days: 44, st: 'warn', stLabel: '注意' },
+        { maker: 'トヨタ', cat: 'コンパクト', model: 'ヤリス (中古)', sales: 156, stock: 62, amount: '18,600', days: 38, st: 'ok', stLabel: '適正' },
+        { maker: 'トヨタ', cat: 'ミニバン', model: 'ヴォクシー (中古)', sales: 84, stock: 52, amount: '20,800', days: 47, st: 'warn', stLabel: '注意' },
+        { maker: 'トヨタ', cat: 'SUV', model: 'ライズ (中古)', sales: 121, stock: 44, amount: '17,600', days: 31, st: 'ok', stLabel: '適正' },
+        { maker: 'トヨタ', cat: 'SUV', model: 'ハリアー (中古)', sales: 45, stock: 38, amount: '38,000', days: 55, st: 'warn', stLabel: '注意' },
+        { maker: '日産', cat: 'ミニバン', model: 'セレナ (中古)', sales: 67, stock: 89, amount: '31,150', days: 68, st: 'danger', stLabel: '危険' },
+      ]
+    }
+  };
+
+  const kpiGrid = document.getElementById('kpiGrid');
+  const tableBody = document.getElementById('tableBody');
+
+  function render(tab) {
+    const d = DATA[tab];
+    document.getElementById('tabLabel').textContent = d.label;
+    document.getElementById('tabDesc').textContent = d.desc;
+
+    // KPI
+    kpiGrid.innerHTML = d.kpi.map(k => {
+      if (k.alert) {
+        return `<div class="kpi">
+          <div class="kpi-head"><span>${k.title}</span><span class="ico">${k.ico}</span></div>
+          <div class="kpi-val alert">${k.val} <span class="lbl">${k.lbl}</span></div>
+          <div class="kpi-foot">${k.foot}</div>
+        </div>`;
+      }
+      return `<div class="kpi">
+        <div class="kpi-head"><span>${k.title}</span><span class="ico">${k.ico}</span></div>
+        <div class="kpi-val">${k.val}${k.unit ? ' <span class="unit">'+k.unit+'</span>' : ''} <span class="delta ${k.dcls}">${k.delta}</span></div>
+        <div class="kpi-foot">${k.foot}</div>
+      </div>`;
+    }).join('');
+
+    // Table with rowspan grouping (contiguous runs of maker / category)
+    const hasMaker = !!d.rows[0].maker;
+    document.getElementById('makerHeader').style.display = hasMaker ? '' : 'none';
+
+    let html = '';
+    d.rows.forEach((r, i) => {
+      const prev = d.rows[i - 1];
+      const isNewMaker = hasMaker && (!prev || prev.maker !== r.maker);
+      const isNewCat = !prev || isNewMaker || prev.cat !== r.cat;
+
+      html += '<tr>';
+      if (hasMaker && isNewMaker) {
+        let span = 0;
+        for (let j = i; j < d.rows.length && d.rows[j].maker === r.maker; j++) span++;
+        html += `<td class="cat-cell" rowspan="${span}">${r.maker}</td>`;
+      }
+      if (isNewCat) {
+        let span = 0;
+        for (let j = i; j < d.rows.length && d.rows[j].cat === r.cat && (!hasMaker || d.rows[j].maker === r.maker); j++) span++;
+        html += `<td class="cat-cell" rowspan="${span}">${r.cat}</td>`;
+      }
+      html += `<td class="model-name">${r.model}</td>
+          <td class="num">${r.sales}</td>
+          <td class="num">${r.stock}</td>
+          <td class="num">${r.amount}</td>
+          <td class="num">${r.days}</td>
+          <td class="center"><span class="status ${r.st}">${r.st==='danger'?'●':''}${r.stLabel}</span></td>
+        </tr>`;
+    });
+    tableBody.innerHTML = html;
+  }
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      render(t.dataset.tab);
+    });
+  });
+
+  render('new');
+
+  // PDF出力・紙印刷（ブラウザの印刷ダイアログを利用。PDF出力は「送信先」でPDF保存を選ぶ）
+  function exportPDF() {
+    document.title = '需給バランス分析表_' + new Date().toISOString().slice(0,10);
+    window.print();
+  }
+  function printPaper() {
+    window.print();
+  }
+</script>
+</body>
+</html>

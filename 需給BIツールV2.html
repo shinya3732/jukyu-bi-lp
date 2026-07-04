@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>需給バランス分析 | GlobalFleet Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --sidebar: #0f1629;
+    --sidebar-hover: #1a2542;
+    --sidebar-active: #2563eb;
+    --accent: #2563eb;
+    --accent-soft: #eff4ff;
+    --card: #ffffff;
+    --border: #eaecf2;
+    --border-strong: #dfe3ec;
+    --ink: #0f172a;
+    --ink-2: #475569;
+    --ink-3: #8a94a6;
+    --ink-4: #b4bccb;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --green-bar: #34d399;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-bar: #fbbf24;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-bar: #f87171;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.05);
+    --shadow: 0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
+    --shadow-lg: 0 8px 24px -6px rgba(16,24,40,.10), 0 2px 6px rgba(16,24,40,.05);
+    --r: 12px;
+    --r-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  ::selection { background: #dbe6ff; }
+
+  /* ================= SIDEBAR ================= */
+  .sidebar {
+    width: 244px; flex-shrink: 0;
+    background: var(--sidebar);
+    color: #cdd5e5;
+    display: flex; flex-direction: column;
+    padding: 20px 14px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 8px 20px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .brand .mark {
+    width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; box-shadow: 0 4px 12px rgba(37,99,235,.4);
+  }
+  .brand .txt .n { font-weight: 700; font-size: 14.5px; color: #fff; letter-spacing: -.01em; }
+  .brand .txt .s { font-size: 10.5px; color: #7c88a1; letter-spacing: .04em; text-transform: uppercase; margin-top: 1px; }
+
+  .nav-group { margin-bottom: 4px; }
+  .nav-cap {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .09em;
+    color: #5c6a86; text-transform: uppercase;
+    padding: 12px 12px 7px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px;
+    color: #aeb8cd; cursor: pointer; font-weight: 500; font-size: 13.5px;
+    position: relative; transition: background .16s, color .16s;
+  }
+  .nav-item .ic { width: 18px; height: 18px; flex-shrink: 0; stroke: currentColor; }
+  .nav-item:hover { background: var(--sidebar-hover); color: #fff; }
+  .nav-item.active { background: linear-gradient(90deg, rgba(37,99,235,.22), rgba(37,99,235,.08)); color: #fff; }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: -14px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 20px; background: var(--accent); border-radius: 0 3px 3px 0;
+  }
+  .nav-item .badge-n {
+    margin-left: auto; background: var(--red); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 20px;
+  }
+  .sidebar-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.07); }
+  .user-chip {
+    display: flex; align-items: center; gap: 11px; padding: 8px; border-radius: 11px;
+    cursor: pointer; transition: background .16s;
+  }
+  .user-chip:hover { background: var(--sidebar-hover); }
+  .user-chip .av {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg,#f59e0b,#ef4444);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 13px;
+  }
+  .user-chip .un { font-size: 13px; font-weight: 600; color: #fff; }
+  .user-chip .ur { font-size: 11px; color: #7c88a1; }
+
+  /* ================= MAIN ================= */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  .appbar {
+    height: 64px; flex-shrink: 0;
+    background: rgba(255,255,255,.85); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 18px;
+    padding: 0 30px; position: sticky; top: 0; z-index: 20;
+  }
+  .breadcrumb { font-size: 13px; color: var(--ink-3); font-weight: 500; }
+  .breadcrumb b { color: var(--ink); font-weight: 600; }
+  .search {
+    margin-left: auto; display: flex; align-items: center; gap: 9px;
+    background: var(--bg); border: 1px solid var(--border-strong);
+    border-radius: 10px; padding: 8px 13px; width: 240px;
+    color: var(--ink-3); font-size: 13px; transition: border-color .16s, box-shadow .16s;
+  }
+  .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .search input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 13px; color: var(--ink); }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border-strong);
+    background: var(--card); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink-2); position: relative; transition: all .16s;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .icon-btn .dot { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; background: var(--red); border: 2px solid var(--card); border-radius: 50%; }
+
+  .content { padding: 26px 30px 40px; flex: 1; }
+
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
+  .page-head h1 { font-size: 25px; font-weight: 800; letter-spacing: -.025em; display: flex; align-items: center; gap: 11px; }
+  .page-head h1 .chip {
+    font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 20px;
+    background: var(--accent-soft); color: var(--accent); letter-spacing: 0;
+  }
+  .page-head .sub { color: var(--ink-3); font-size: 13.5px; margin-top: 5px; }
+  .head-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 15px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border-strong); background: var(--card);
+    color: var(--ink-2); font-family: inherit; transition: all .16s; box-shadow: var(--shadow-sm);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn svg { width: 15px; height: 15px; }
+  .btn.solid { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.solid:hover { background: #1d4ed8; color: #fff; }
+
+  /* Segmented control */
+  .seg {
+    display: inline-flex; background: #eceef4; border-radius: 11px; padding: 4px; gap: 3px; margin-bottom: 22px;
+  }
+  .seg button {
+    padding: 8px 24px; border-radius: 8px; font-weight: 600; font-size: 13px;
+    border: none; background: none; color: var(--ink-3); cursor: pointer; font-family: inherit;
+    transition: all .18s; display: flex; align-items: center; gap: 7px;
+  }
+  .seg button.active { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
+
+  /* ================= KPI ================= */
+  .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: 18px 18px 16px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+    transition: transform .18s, box-shadow .18s;
+  }
+  .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .kpi-top .lab { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+  .kpi-ic { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .kpi-ic svg { width: 17px; height: 17px; }
+  .ic-blue { background: var(--accent-soft); color: var(--accent); }
+  .ic-green { background: var(--green-bg); color: var(--green); }
+  .ic-amber { background: var(--amber-bg); color: var(--amber); }
+  .ic-red { background: var(--red-bg); color: var(--red); }
+  .kpi-val { font-size: 28px; font-weight: 800; letter-spacing: -.02em; display: flex; align-items: baseline; gap: 6px; }
+  .kpi-val .u { font-size: 13px; font-weight: 600; color: var(--ink-3); }
+  .kpi-meta { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .trend { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+  .trend.up { background: var(--green-bg); color: var(--green); }
+  .trend.down { background: var(--red-bg); color: var(--red); }
+  .trend.flat { background: #f1f3f8; color: var(--ink-2); }
+  .trend svg { width: 12px; height: 12px; }
+  .kpi-foot { font-size: 11.5px; color: var(--ink-3); }
+  /* progress */
+  .kpi-prog { height: 5px; border-radius: 4px; background: #eef0f5; margin-top: 13px; overflow: hidden; }
+  .kpi-prog > span { display: block; height: 100%; border-radius: 4px; }
+  .kpi.alert { background: linear-gradient(180deg,#fff, #fffafa); border-color: #fce4e4; }
+  .kpi-val.danger { color: var(--red); }
+  .kpi-val .tag { font-size: 13px; font-weight: 700; padding: 2px 9px; border-radius: 6px; background: var(--red-bg); color: var(--red); }
+
+  /* ================= LAYOUT (chart + table) ================= */
+  .grid-2 { display: grid; grid-template-columns: 1fr; gap: 18px; }
+
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow); overflow: hidden; }
+  .panel-head { padding: 17px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); }
+  .panel-head .t { font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+  .panel-head .st { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .filters { display: flex; gap: 8px; }
+  .filters .f {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    padding: 6px 11px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-2);
+  }
+  .filters .f .k { color: var(--ink-3); font-weight: 500; }
+
+  /* category summary bars */
+  .summary { padding: 18px 22px; display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px 34px; }
+  .sum-item .sum-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .sum-item .sum-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .sum-item .sum-val { font-size: 12.5px; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .sum-bar { height: 8px; border-radius: 5px; background: #eef0f5; overflow: hidden; display: flex; }
+  .sum-bar > span { height: 100%; display: block; }
+  .sum-legend { display: flex; gap: 16px; padding: 0 22px 18px; flex-wrap: wrap; }
+  .sum-legend .l { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-2); }
+  .sum-legend .l .sw { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ================= TABLE ================= */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 12px 18px; font-size: 11px; font-weight: 700;
+    color: var(--ink-3); letter-spacing: .05em; text-transform: uppercase;
+    background: #fbfcfe; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: help;
+  }
+  thead th.num { text-align: right; }
+  thead th.center { text-align: center; }
+  thead th .u { font-weight: 500; text-transform: none; color: var(--ink-4); }
+  tbody td { padding: 13px 18px; border-bottom: 1px solid #f2f4f8; font-size: 13.5px; vertical-align: middle; }
+  tbody tr { transition: background .12s; }
+  tbody tr:hover { background: #fafbff; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  tbody td.center { text-align: center; }
+  .grp-cell { font-weight: 700; color: var(--ink); background: #fcfdff; border-right: 1px solid var(--border); }
+  .grp-maker { color: var(--accent); }
+  .model-cell { font-weight: 600; }
+  .model-cell .ev { font-size: 10px; font-weight: 700; color: var(--green); background: var(--green-bg); padding: 1px 6px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+
+  /* inline data bar */
+  .cell-bar { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
+  .cell-bar .bt { width: 54px; height: 6px; border-radius: 4px; background: #eef0f5; overflow: hidden; flex-shrink: 0; }
+  .cell-bar .bt > span { display: block; height: 100%; border-radius: 4px; }
+  .days-pill { display: inline-block; min-width: 42px; padding: 3px 9px; border-radius: 7px; font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .days-ok { background: var(--green-bg); color: var(--green); }
+  .days-warn { background: var(--amber-bg); color: var(--amber); }
+  .days-danger { background: var(--red-bg); color: var(--red); }
+
+  .status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px 4px 9px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .status .d { width: 6px; height: 6px; border-radius: 50%; }
+  .status.ok { background: var(--green-bg); color: var(--green); }
+  .status.ok .d { background: var(--green); }
+  .status.warn { background: var(--amber-bg); color: var(--amber); }
+  .status.warn .d { background: var(--amber); }
+  .status.danger { background: var(--red-bg); color: var(--red); }
+  .status.danger .d { background: var(--red); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .tbl-foot { padding: 13px 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: #fbfcfe; border-top: 1px solid var(--border); }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; }
+  .legend .li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .tbl-foot .cnt { font-size: 12px; color: var(--ink-3); }
+
+  @media (max-width: 1180px) { .kpis { grid-template-columns: repeat(2,1fr) !important; } }
+  @media (max-width: 1000px) {
+    .sidebar { width: 72px; }
+    .brand .txt, .nav-cap, .nav-item span:not(.badge-n), .user-chip .ux { display: none; }
+    .nav-item { justify-content: center; } .nav-item .badge-n { position: absolute; top: 4px; right: 4px; margin: 0; }
+    .search { width: 150px; }
+  }
+  @media (max-width: 680px) { .kpis { grid-template-columns: 1fr !important; } .content { padding: 18px; } .search { display: none; } }
+
+  /* ================= PRINT ================= */
+  @media print {
+    body { background: #fff; display: block; }
+    .sidebar, .appbar, .head-actions, .seg, .filters, .search { display: none !important; }
+    .content { padding: 0; }
+    .panel, .kpi { box-shadow: none; break-inside: avoid; border: 1px solid #d0d5dd; }
+    .kpi:hover { transform: none; }
+    thead th { background: #f0f2f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page-head { margin-bottom: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== SIDEBAR ===================== -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="mark">◆</div>
+    <div class="txt">
+      <div class="n">GlobalFleet</div>
+      <div class="s">Analytics Suite</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-cap">メニュー</div>
+    <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>ダッシュボード</span></div>
+    <div class="nav-item active" data-page="inventory" onclick="switchPage('inventory',this)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg><span>在庫分析</span><span class="badge-n">12</span></div>
+    <div class="nav-item" data-page="sales" onclick="switchPage('sales',this)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg><span>販売分析</span></div>
+    <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3c0 1 .5 1.8 1.2 2.4L8 20h8l-2.2-12.6A3 3 0 0 0 15 5a3 3 0 0 0-3-3z"/></svg><span>供給体制</span></div>
+    <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v16"/></svg><span>財務分析</span></div>
+    <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg><span>市場動向</span></div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-cap">その他</div>
+    <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4 1.8c0 1.5-2.5 1.7-2.5 3"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/></svg><span>サポート</span></div>
+    <div class="nav-item"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.3 1a7 7 0 0 0-1.7-1l-.4-2.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.3-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg><span>設定</span></div>
+  </div>
+
+  <div class="sidebar-foot">
+    <div class="user-chip">
+      <div class="av">ST</div>
+      <div class="ux">
+        <div class="un">佐藤 太郎</div>
+        <div class="ur">在庫管理マネージャー</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ===================== MAIN ===================== -->
+<div class="main">
+  <header class="appbar">
+    <div class="breadcrumb" id="breadcrumb">在庫分析 <span style="color:var(--ink-4)">/</span> <b>需給バランス分析</b></div>
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+      <input placeholder="車種・メーカーを検索">
+    </div>
+    <div class="icon-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></div>
+  </header>
+
+  <div class="content" id="page-inventory">
+    <div class="page-head">
+      <div>
+        <h1>需給バランス分析 <span class="chip" id="tabChip">新車</span></h1>
+        <div class="sub">在庫と販売のバランスをリアルタイムに可視化し、過剰・不足を早期に検知します</div>
+      </div>
+      <div class="head-actions">
+        <div class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>2023年10月 - 2024年3月</div>
+        <div class="btn" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>PDF出力</div>
+        <div class="btn solid" onclick="printPaper()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="7"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/></svg>紙印刷</div>
+      </div>
+    </div>
+
+    <div class="seg">
+      <button class="active" data-tab="new" onclick="switchTab('new',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5H5z"/><circle cx="7.5" cy="17.5" r="1.5" fill="currentColor"/><circle cx="16.5" cy="17.5" r="1.5" fill="currentColor"/></svg>新車
+      </button>
+      <button data-tab="used" onclick="switchTab('used',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>中古車
+      </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpis" id="kpis"></div>
+
+    <!-- CATEGORY SUMMARY -->
+    <div class="grid-2" style="margin-bottom:18px">
+      <div class="panel">
+        <div class="panel-head">
+          <div><div class="t">カテゴリ別 在庫状況</div><div class="st">適正・注意・危険の構成比を可視化</div></div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div class="sum-legend">
+          <div class="l"><span class="sw" style="background:var(--green-bar)"></span>適正</div>
+          <div class="l"><span class="sw" style="background:var(--amber-bar)"></span>注意</div>
+          <div class="l"><span class="sw" style="background:var(--red-bar)"></span>危険</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="panel">
+      <div class="panel-head">
+        <div><div class="t" id="tblTitle">ダイハツ 車種別分析</div><div class="st">車種ごとの需給バランス詳細</div></div>
+        <div class="filters">
+          <span class="f"><span class="k">メーカー</span> ダイハツ</span>
+          <span class="f"><span class="k">エリア</span> 関東</span>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr id="theadRow">
+              <th id="makerTh" style="display:none" title="車を製造している会社">メーカー</th>
+              <th title="車の種類グループ（軽自動車・SUVなど）">カテゴリ</th>
+              <th title="具体的な車の名前">車種名</th>
+              <th class="num" title="期間中に実際に売れた台数">販売実績 <span class="u">(台)</span></th>
+              <th class="num" title="現在の在庫台数">現在庫 <span class="u">(台)</span></th>
+              <th class="num" title="在庫の合計金額">在庫金額 <span class="u">(千円)</span></th>
+              <th class="num" title="在庫が売れるまでの平均日数。長いほど売れ残り傾向">回転日数 <span class="u">(日)</span></th>
+              <th class="center" title="在庫の健全性をひと目で判定">ステータス</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="tbl-foot">
+        <div class="legend">
+          <span class="li"><span class="status ok"><span class="d"></span>適正</span> バランス良好</span>
+          <span class="li"><span class="status warn"><span class="d"></span>注意</span> 回転やや長め</span>
+          <span class="li"><span class="status danger"><span class="d"></span>危険</span> 過剰・不足の恐れ</span>
+        </div>
+        <div class="cnt" id="rowCount"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SALES PAGE ===================== -->
+  <div class="content" id="page-sales" style="display:none">
+    <div class="page-head">
+      <div>
+        <h1>販売分析 <span class="chip" id="salesTabChip">新車</span></h1>
+        <div class="sub">受注・登録・売上の実績と翌月の見込みを一覧で把握します</div>
+      </div>
+      <div class="head-actions">
+        <div class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>2023年10月 - 2024年3月</div>
+        <div class="btn" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>PDF出力</div>
+        <div class="btn solid" onclick="printPaper()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="7"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/></svg>紙印刷</div>
+      </div>
+    </div>
+
+    <div class="seg">
+      <button class="active" data-tab="new" onclick="switchSalesTab('new',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5H5z"/><circle cx="7.5" cy="17.5" r="1.5" fill="currentColor"/><circle cx="16.5" cy="17.5" r="1.5" fill="currentColor"/></svg>新車
+      </button>
+      <button data-tab="used" onclick="switchSalesTab('used',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>中古車
+      </button>
+    </div>
+
+    <!-- 上段 KPI -->
+    <div class="kpis" id="salesKpis" style="grid-template-columns:repeat(6,1fr)"></div>
+
+    <!-- 中段 カテゴリ別売上構成比 -->
+    <div class="grid-2" style="margin-bottom:18px">
+      <div class="panel">
+        <div class="panel-head">
+          <div><div class="t">カテゴリ別 売上状況</div><div class="st">軽乗用・軽商用・登録車の構成比</div></div>
+        </div>
+        <div class="summary" id="salesSummary"></div>
+      </div>
+    </div>
+
+    <!-- 下段 車種別売上分析テーブル -->
+    <div class="panel">
+      <div class="panel-head">
+        <div><div class="t" id="salesTblTitle">ダイハツ 車種別売上分析</div><div class="st">車種ごとの当月・翌月販売実績と登録実現率</div></div>
+        <div class="filters">
+          <span class="f"><span class="k">メーカー</span> ダイハツ</span>
+          <span class="f"><span class="k">エリア</span> 関東</span>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th title="車の種類グループ">カテゴリ</th>
+              <th title="具体的な車の名前">車名別</th>
+              <th class="num" title="今月受け付けた注文の総台数">当月総受注数 <span class="u">(台)</span></th>
+              <th class="num" title="今月実際に売れた台数">当月販売実績 <span class="u">(台)</span></th>
+              <th class="num" title="翌月に販売予定の台数">翌月販売実績 <span class="u">(台)</span></th>
+              <th class="num" title="当月の売上金額">売上金額 <span class="u">(千円)</span></th>
+              <th class="num" title="受注に対して実際に登録できた割合">登録実現率</th>
+              <th class="center" title="登録実現率の健全性をひと目で判定">ステータス</th>
+            </tr>
+          </thead>
+          <tbody id="salesTbody"></tbody>
+        </table>
+      </div>
+      <div class="tbl-foot">
+        <div class="cnt" id="salesRowCount"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===================== DATA =====================
+  const DATA = {
+    new: {
+      chip: '新車', title: 'ダイハツ 車種別分析',
+      kpi: [
+        { lab:'総在庫数', ic:'box', tone:'blue', val:'1,428', u:'台', trend:'-2.4%', dir:'down', foot:'目標 1,500 台', prog:95, pcol:'var(--amber-bar)' },
+        { lab:'平均回転日数', ic:'clock', tone:'green', val:'32.5', u:'日', trend:'+1.2', dir:'flat', foot:'目標 30 日', prog:92, pcol:'var(--green-bar)' },
+        { lab:'在庫金額', ic:'yen', tone:'blue', val:'4,200,000', u:'千円', trend:'安定', dir:'up', foot:'上限 5,000,000 千円', prog:84, pcol:'var(--accent)' },
+        { lab:'在庫アラート', ic:'alert', tone:'red', alert:true, val:'12', tag:'危機的', foot:'過剰 4 ／ 不足 8' },
+      ],
+      rows: [
+        { cat:'軽乗用', model:'ミライース', sales:145, stock:42, amount:5000, days:28, st:'ok' },
+        { cat:'軽乗用', model:'コペン', sales:32, stock:18, amount:3000, days:54, st:'warn' },
+        { cat:'軽乗用', model:'ムーヴ', sales:189, stock:75, amount:12000, days:35, st:'ok' },
+        { cat:'軽乗用', model:'ムーヴキャンバス', sales:210, stock:124, amount:24000, days:62, st:'danger' },
+        { cat:'軽乗用', model:'タント', sales:342, stock:88, amount:18000, days:24, st:'ok' },
+        { cat:'軽乗用', model:'タフト', sales:156, stock:31, amount:6000, days:18, st:'warn' },
+        { cat:'軽商用', model:'アトレー', sales:94, stock:22, amount:4000, days:21, st:'ok' },
+        { cat:'軽商用', model:'アトレー', ev:true, model2:'E', sales:27, stock:15, amount:3300, days:39, st:'warn', evName:'Eアトレー' },
+        { cat:'軽商用', model:'ハイゼットカーゴ', sales:128, stock:58, amount:9000, days:41, st:'warn' },
+        { cat:'軽商用', model:'ハイゼットカーゴ', ev:true, sales:19, stock:12, amount:2800, days:45, st:'warn', evName:'Eハイゼットカーゴ' },
+        { cat:'軽商用', model:'ハイゼットトラック', sales:167, stock:45, amount:7500, days:26, st:'ok' },
+        { cat:'登録車', model:'ロッキー', sales:98, stock:67, amount:15000, days:58, st:'danger' },
+        { cat:'登録車', model:'トール', sales:76, stock:29, amount:8000, days:33, st:'ok' },
+      ]
+    },
+    used: {
+      chip: '中古車', title: '中古車 メーカー別分析',
+      kpi: [
+        { lab:'総在庫数', ic:'box', tone:'blue', val:'2,860', u:'台', trend:'+5.1%', dir:'up', foot:'目標 2,700 台', prog:106, pcol:'var(--red-bar)' },
+        { lab:'平均回転日数', ic:'clock', tone:'amber', val:'45.8', u:'日', trend:'-3.4', dir:'up', foot:'目標 45 日', prog:98, pcol:'var(--green-bar)' },
+        { lab:'在庫金額', ic:'yen', tone:'blue', val:'2,640,000', u:'千円', trend:'注意', dir:'flat', foot:'上限 3,000,000 千円', prog:88, pcol:'var(--amber-bar)' },
+        { lab:'在庫アラート', ic:'alert', tone:'red', alert:true, val:'19', tag:'要確認', foot:'過剰 11 ／ 不足 8' },
+      ],
+      rows: [
+        { maker:'ダイハツ', cat:'軽乗用', model:'タント (中古)', sales:88, stock:134, amount:13400, days:72, st:'danger' },
+        { maker:'ダイハツ', cat:'軽乗用', model:'ムーヴ (中古)', sales:112, stock:96, amount:9600, days:51, st:'warn' },
+        { maker:'ホンダ', cat:'軽乗用', model:'N-BOX (中古)', sales:203, stock:78, amount:15600, days:34, st:'ok' },
+        { maker:'ホンダ', cat:'コンパクト', model:'フィット (中古)', sales:98, stock:41, amount:11300, days:44, st:'warn' },
+        { maker:'トヨタ', cat:'コンパクト', model:'ヤリス (中古)', sales:156, stock:62, amount:18600, days:38, st:'ok' },
+        { maker:'トヨタ', cat:'ミニバン', model:'ヴォクシー (中古)', sales:84, stock:52, amount:20800, days:47, st:'warn' },
+        { maker:'トヨタ', cat:'SUV', model:'ライズ (中古)', sales:121, stock:44, amount:17600, days:31, st:'ok' },
+        { maker:'トヨタ', cat:'SUV', model:'ハリアー (中古)', sales:45, stock:38, amount:38000, days:55, st:'warn' },
+        { maker:'日産', cat:'ミニバン', model:'セレナ (中古)', sales:67, stock:89, amount:31150, days:68, st:'danger' },
+      ]
+    }
+  };
+
+  const ST_LABEL = { ok:'適正', warn:'注意', danger:'危険' };
+  const ICONS = {
+    box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    yen:'<path d="M7 4l5 7 5-7M12 11v9M8 14h8M8 17h8"/>',
+    alert:'<path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17v.5"/>'
+  };
+  const TREND_ICON = {
+    up:'<path d="M4 15l6-6 4 4 6-7"/><path d="M20 6v4h-4"/>',
+    down:'<path d="M4 9l6 6 4-4 6 7"/><path d="M20 18v-4h-4"/>',
+    flat:'<path d="M4 12h16"/>'
+  };
+
+  const fmt = n => n.toLocaleString('ja-JP');
+
+  function daysClass(d) { return d >= 55 ? 'days-danger' : d >= 40 ? 'days-warn' : 'days-ok'; }
+  function barColor(st) { return st==='danger'?'var(--red-bar)':st==='warn'?'var(--amber-bar)':'var(--green-bar)'; }
+
+  function renderKPI(d) {
+    document.getElementById('kpis').innerHTML = d.kpi.map(k => {
+      if (k.alert) {
+        return `<div class="kpi alert">
+          <div class="kpi-top"><span class="lab">${k.lab}</span><span class="kpi-ic ic-${k.tone}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICONS[k.ic]}</svg></span></div>
+          <div class="kpi-val danger">${k.val} <span class="tag">${k.tag}</span></div>
+          <div class="kpi-meta"><span class="kpi-foot">${k.foot}</span></div>
+        </div>`;
+      }
+      return `<div class="kpi">
+        <div class="kpi-top"><span class="lab">${k.lab}</span><span class="kpi-ic ic-${k.tone}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICONS[k.ic]}</svg></span></div>
+        <div class="kpi-val">${k.val}${k.u?` <span class="u">${k.u}</span>`:''}</div>
+        <div class="kpi-meta">
+          <span class="trend ${k.dir}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${TREND_ICON[k.dir]}</svg>${k.trend}</span>
+          <span class="kpi-foot">${k.foot}</span>
+        </div>
+        <div class="kpi-prog"><span style="width:${Math.min(k.prog,100)}%;background:${k.pcol}"></span></div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderSummary(d) {
+    const cats = [];
+    d.rows.forEach(r => { if (!cats.includes(r.cat)) cats.push(r.cat); });
+    document.getElementById('summary').innerHTML = cats.map(cat => {
+      const rows = d.rows.filter(r => r.cat === cat);
+      const tot = rows.length;
+      const ok = rows.filter(r=>r.st==='ok').length;
+      const warn = rows.filter(r=>r.st==='warn').length;
+      const dg = rows.filter(r=>r.st==='danger').length;
+      const pct = n => (n/tot*100).toFixed(1);
+      return `<div class="sum-item">
+        <div class="sum-top"><span class="sum-name">${cat}</span><span class="sum-val">${tot} 車種</span></div>
+        <div class="sum-bar">
+          ${ok?`<span style="width:${pct(ok)}%;background:var(--green-bar)"></span>`:''}
+          ${warn?`<span style="width:${pct(warn)}%;background:var(--amber-bar)"></span>`:''}
+          ${dg?`<span style="width:${pct(dg)}%;background:var(--red-bar)"></span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderTable(d) {
+    const hasMaker = !!d.rows[0].maker;
+    document.getElementById('makerTh').style.display = hasMaker ? '' : 'none';
+    document.getElementById('tblTitle').textContent = d.title;
+
+    const maxSales = Math.max(...d.rows.map(r=>r.sales));
+    const maxStock = Math.max(...d.rows.map(r=>r.stock));
+
+    let html = '';
+    d.rows.forEach((r, i) => {
+      const prev = d.rows[i-1];
+      const newMaker = hasMaker && (!prev || prev.maker !== r.maker);
+      const newCat = !prev || newMaker || prev.cat !== r.cat;
+      const name = r.evName || r.model;
+
+      html += '<tr>';
+      if (hasMaker && newMaker) {
+        let span=0; for (let j=i;j<d.rows.length&&d.rows[j].maker===r.maker;j++) span++;
+        html += `<td class="grp-cell grp-maker" rowspan="${span}">${r.maker}</td>`;
+      }
+      if (newCat) {
+        let span=0; for (let j=i;j<d.rows.length&&d.rows[j].cat===r.cat&&(!hasMaker||d.rows[j].maker===r.maker);j++) span++;
+        html += `<td class="grp-cell" rowspan="${span}">${r.cat}</td>`;
+      }
+      html += `
+        <td class="model-cell">${name}${r.ev?' <span class="ev">EV</span>':''}</td>
+        <td class="num"><div class="cell-bar"><span>${fmt(r.sales)}</span><span class="bt"><span style="width:${r.sales/maxSales*100}%;background:var(--accent)"></span></span></div></td>
+        <td class="num"><div class="cell-bar"><span>${fmt(r.stock)}</span><span class="bt"><span style="width:${r.stock/maxStock*100}%;background:${barColor(r.st)}"></span></span></div></td>
+        <td class="num">${fmt(r.amount)}</td>
+        <td class="num"><span class="days-pill ${daysClass(r.days)}">${r.days}</span></td>
+        <td class="center"><span class="status ${r.st}"><span class="d"></span>${ST_LABEL[r.st]}</span></td>
+      </tr>`;
+    });
+    document.getElementById('tbody').innerHTML = html;
+    document.getElementById('rowCount').textContent = `全 ${d.rows.length} 車種を表示`;
+  }
+
+  function render(tab) {
+    const d = DATA[tab];
+    document.getElementById('tabChip').textContent = d.chip;
+    renderKPI(d); renderSummary(d); renderTable(d);
+  }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    render(tab);
+  }
+
+  function exportPDF() { document.title = '需給バランス分析_'+new Date().toISOString().slice(0,10); window.print(); }
+  function printPaper() { window.print(); }
+
+  render('new');
+
+  // ===================== 販売分析 =====================
+  const SALES_DATA = {
+    new: {
+      chip: '新車', title: 'ダイハツ 車種別売上分析',
+      kpi: [
+        { lab:'総受注台数', ic:'box', tone:'blue', val:'1,286', u:'台', trend:'+3.8%', dir:'up', foot:'前月比', prog:96, pcol:'var(--accent)' },
+        { lab:'当月登録台数', ic:'clock', tone:'green', val:'1,104', u:'台', trend:'+2.1%', dir:'up', foot:'受注比 85.9%', prog:86, pcol:'var(--green-bar)' },
+        { lab:'当月売上台数', ic:'yen', tone:'blue', val:'1,098', u:'台', trend:'-0.5%', dir:'flat', foot:'目標 1,150 台', prog:95, pcol:'var(--amber-bar)' },
+        { lab:'当月売上金額', ic:'yen', tone:'blue', val:'42,600', u:'千円', trend:'+1.8%', dir:'up', foot:'目標 44,000 千円', prog:97, pcol:'var(--accent)' },
+        { lab:'翌月登録予定台数', ic:'box', tone:'amber', val:'1,352', u:'台', trend:'+5.1%', dir:'up', foot:'来月の見込み', prog:90, pcol:'var(--accent)' },
+        { lab:'登録実現率', ic:'alert', tone:'green', val:'85.9', u:'%', trend:'+1.2pt', dir:'up', foot:'目標 88.0%', prog:97, pcol:'var(--green-bar)' },
+      ],
+      rows: [
+        { cat:'軽乗用', model:'ミライース', order:134, thisM:118, nextM:132, amount:4130, rate:88.1 },
+        { cat:'軽乗用', model:'コペン', order:34, thisM:26, nextM:24, amount:2470, rate:76.5 },
+        { cat:'軽乗用', model:'ムーヴ', order:185, thisM:156, nextM:171, amount:9880, rate:84.3 },
+        { cat:'軽乗用', model:'ムーヴキャンバス', order:235, thisM:172, nextM:198, amount:19680, rate:73.2 },
+        { cat:'軽乗用', model:'タント', order:326, thisM:298, nextM:315, amount:15690, rate:91.4 },
+        { cat:'軽乗用', model:'タフト', order:160, thisM:129, nextM:140, amount:4960, rate:80.6 },
+        { cat:'軽商用', model:'アトレー', order:93, thisM:81, nextM:88, amount:3440, rate:87.2 },
+        { cat:'軽商用', model:'Eアトレー', order:12, thisM:9, nextM:11, amount:1350, rate:77.8 },
+        { cat:'軽商用', model:'ハイゼットカーゴ', order:130, thisM:107, nextM:118, amount:7520, rate:82.0 },
+        { cat:'軽商用', model:'Eハイゼットカーゴ', order:8, thisM:6, nextM:8, amount:980, rate:72.0 },
+        { cat:'軽商用', model:'ハイゼットトラック', order:158, thisM:141, nextM:150, amount:6340, rate:89.5 },
+        { cat:'登録車', model:'ロッキー', order:112, thisM:79, nextM:85, amount:12130, rate:70.8 },
+        { cat:'登録車', model:'トール', order:76, thisM:65, nextM:71, amount:6820, rate:85.3 },
+      ]
+    },
+    used: {
+      chip: '中古車', title: '中古車 車種別売上分析',
+      kpi: [
+        { lab:'総受注台数', ic:'box', tone:'blue', val:'742', u:'台', trend:'-1.9%', dir:'down', foot:'前月比', prog:92, pcol:'var(--amber-bar)' },
+        { lab:'当月登録台数', ic:'clock', tone:'green', val:'601', u:'台', trend:'+0.8%', dir:'up', foot:'受注比 81.0%', prog:81, pcol:'var(--green-bar)' },
+        { lab:'当月売上台数', ic:'yen', tone:'blue', val:'598', u:'台', trend:'-2.2%', dir:'down', foot:'目標 640 台', prog:93, pcol:'var(--amber-bar)' },
+        { lab:'当月売上金額', ic:'yen', tone:'amber', val:'24,300', u:'千円', trend:'-1.4%', dir:'down', foot:'目標 26,000 千円', prog:93, pcol:'var(--amber-bar)' },
+        { lab:'翌月登録予定台数', ic:'box', tone:'amber', val:'689', u:'台', trend:'-3.0%', dir:'down', foot:'来月の見込み', prog:88, pcol:'var(--amber-bar)' },
+        { lab:'登録実現率', ic:'alert', tone:'amber', val:'81.0', u:'%', trend:'-1.6pt', dir:'down', foot:'目標 85.0%', prog:88, pcol:'var(--amber-bar)' },
+      ],
+      rows: [
+        { cat:'軽乗用', model:'タント (中古)', order:68, thisM:52, nextM:57, amount:7020, rate:76.4 },
+        { cat:'軽乗用', model:'ムーヴ (中古)', order:83, thisM:68, nextM:64, amount:5680, rate:82.1 },
+        { cat:'軽乗用', model:'N-BOX (中古)', order:136, thisM:121, nextM:130, amount:9680, rate:88.9 },
+        { cat:'コンパクト', model:'ヤリス (中古)', order:109, thisM:93, nextM:98, amount:11440, rate:85.6 },
+        { cat:'コンパクト', model:'フィット (中古)', order:74, thisM:59, nextM:55, amount:6520, rate:79.3 },
+        { cat:'ミニバン', model:'セレナ (中古)', order:60, thisM:41, nextM:48, amount:18790, rate:68.2 },
+        { cat:'ミニバン', model:'ヴォクシー (中古)', order:62, thisM:50, nextM:53, amount:12200, rate:80.5 },
+        { cat:'SUV', model:'ライズ (中古)', order:85, thisM:74, nextM:80, amount:10360, rate:87.3 },
+        { cat:'SUV', model:'ハリアー (中古)', order:36, thisM:27, nextM:31, amount:22140, rate:75.0 },
+      ]
+    }
+  };
+
+  function rateClass(r) { return r >= 85 ? 'days-ok' : r >= 75 ? 'days-warn' : 'days-danger'; }
+  function rateStatus(r) { return r >= 85 ? 'ok' : r >= 75 ? 'warn' : 'danger'; }
+
+  function renderSalesKPI(d) {
+    document.getElementById('salesKpis').innerHTML = d.kpi.map(k => `<div class="kpi">
+        <div class="kpi-top"><span class="lab">${k.lab}</span><span class="kpi-ic ic-${k.tone}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICONS[k.ic]}</svg></span></div>
+        <div class="kpi-val">${k.val}<span class="u">${k.u}</span></div>
+        <div class="kpi-meta">
+          <span class="trend ${k.dir}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${TREND_ICON[k.dir]}</svg>${k.trend}</span>
+          <span class="kpi-foot">${k.foot}</span>
+        </div>
+        <div class="kpi-prog"><span style="width:${Math.min(k.prog,100)}%;background:${k.pcol}"></span></div>
+      </div>`).join('');
+  }
+
+  function renderSalesSummary(d) {
+    const cats = [];
+    d.rows.forEach(r => { if (!cats.includes(r.cat)) cats.push(r.cat); });
+    const totalAll = d.rows.reduce((s,r)=>s+r.amount,0);
+    document.getElementById('salesSummary').innerHTML = cats.map(cat => {
+      const rows = d.rows.filter(r=>r.cat===cat);
+      const amt = rows.reduce((s,r)=>s+r.amount,0);
+      const pct = (amt/totalAll*100).toFixed(1);
+      return `<div class="sum-item">
+        <div class="sum-top"><span class="sum-name">${cat}</span><span class="sum-val">${fmt(amt)} 千円（${pct}%）</span></div>
+        <div class="sum-bar"><span style="width:${pct}%;background:var(--accent)"></span></div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderSalesTable(d) {
+    document.getElementById('salesTblTitle').textContent = d.title;
+    let html = '';
+    d.rows.forEach((r, i) => {
+      const prev = d.rows[i-1];
+      const newCat = !prev || prev.cat !== r.cat;
+      html += '<tr>';
+      if (newCat) {
+        let span=0; for (let j=i;j<d.rows.length&&d.rows[j].cat===r.cat;j++) span++;
+        html += `<td class="grp-cell" rowspan="${span}">${r.cat}</td>`;
+      }
+      html += `
+        <td class="model-cell">${r.model}${r.model.startsWith('E')?' <span class="ev">EV</span>':''}</td>
+        <td class="num">${fmt(r.order)}</td>
+        <td class="num">${fmt(r.thisM)}</td>
+        <td class="num">${fmt(r.nextM)}</td>
+        <td class="num">${fmt(r.amount)}</td>
+        <td class="num"><span class="days-pill ${rateClass(r.rate)}">${r.rate}%</span></td>
+        <td class="center"><span class="status ${rateStatus(r.rate)}"><span class="d"></span>${ST_LABEL[rateStatus(r.rate)]}</span></td>
+      </tr>`;
+    });
+    document.getElementById('salesTbody').innerHTML = html;
+    document.getElementById('salesRowCount').textContent = `全 ${d.rows.length} 車種を表示`;
+  }
+
+  function renderSales(tab) {
+    const d = SALES_DATA[tab];
+    document.getElementById('salesTabChip').textContent = d.chip;
+    renderSalesKPI(d); renderSalesSummary(d); renderSalesTable(d);
+  }
+
+  function switchSalesTab(tab, el) {
+    el.closest('.seg').querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    renderSales(tab);
+  }
+
+  renderSales('new');
+
+  // ===================== ページ切り替え =====================
+  const BREADCRUMBS = {
+    inventory: '在庫分析 <span style="color:var(--ink-4)">/</span> <b>需給バランス分析</b>',
+    sales: '販売分析 <span style="color:var(--ink-4)">/</span> <b>車種別売上分析</b>'
+  };
+  function switchPage(page, el) {
+    document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('page-inventory').style.display = page==='inventory' ? '' : 'none';
+    document.getElementById('page-sales').style.display = page==='sales' ? '' : 'none';
+    document.getElementById('breadcrumb').innerHTML = BREADCRUMBS[page];
+  }
+</script>
+</body>
+</html>
