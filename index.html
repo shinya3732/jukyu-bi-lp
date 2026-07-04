@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>郵便番号 → 住所検索</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-light: #eff6ff;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-400: #94a3b8;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+      --red: #ef4444;
+      --green: #10b981;
+      --radius: 14px;
+      --shadow: 0 4px 32px rgba(0,0,0,0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+      background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 40px 36px 36px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* ヘッダー */
+    .header { text-align: center; margin-bottom: 32px; }
+    .header .icon {
+      font-size: 2.6rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .header h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      letter-spacing: -0.02em;
+    }
+    .header p {
+      margin-top: 6px;
+      font-size: 0.82rem;
+      color: var(--gray-400);
+    }
+
+    /* 入力エリア */
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .zip-input {
+      flex: 1;
+      padding: 14px 18px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      outline: none;
+      color: var(--gray-800);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: var(--gray-50);
+    }
+    .zip-input::placeholder { font-weight: 400; color: var(--gray-400); letter-spacing: 0; }
+    .zip-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      background: #fff;
+    }
+    .btn-search {
+      padding: 14px 22px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.18s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-search:hover { background: var(--blue-dark); }
+    .btn-search:active { transform: scale(0.97); }
+    .btn-search svg { flex-shrink: 0; }
+
+    /* サンプルボタン */
+    .samples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .sample-label { font-size: 0.75rem; color: var(--gray-400); width: 100%; }
+    .btn-sample {
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      color: var(--blue);
+      background: var(--blue-light);
+      border: 1.5px solid #bfdbfe;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-sample:hover { background: #dbeafe; }
+
+    /* 結果ボックス */
+    .result-box {
+      border-radius: var(--radius);
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 20px;
+      transition: background 0.3s;
+      background: var(--gray-50);
+      border: 2px solid var(--gray-100);
+      text-align: center;
+    }
+
+    /* 初期・ローディング */
+    .state-idle { color: var(--gray-400); font-size: 0.9rem; }
+    .state-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--gray-400);
+      font-size: 0.85rem;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--gray-200);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 成功 */
+    .state-success { width: 100%; }
+    .zip-display {
+      font-size: 0.85rem;
+      color: var(--gray-400);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+    .pref {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 4px;
+    }
+    .city {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      line-height: 1.25;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .town {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .copy-btn {
+      margin-top: 18px;
+      padding: 8px 22px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--blue);
+      background: var(--blue-light);
+      border: 1.5px solid #bfdbfe;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #dbeafe; }
+    .copy-btn.copied { color: var(--green); border-color: #6ee7b7; background: #ecfdf5; }
+
+    /* エラー */
+    .state-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .error-icon { font-size: 2rem; }
+    .error-msg { color: var(--red); font-size: 0.9rem; font-weight: 600; }
+    .error-sub { color: var(--gray-400); font-size: 0.8rem; }
+
+    /* フッター */
+    footer {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+    }
+
+    @media (max-width: 400px) {
+      .card { padding: 28px 20px 24px; }
+      .city { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <span class="icon">📮</span>
+    <h1>郵便番号 → 住所</h1>
+    <p>7桁の郵便番号を入力すると住所を表示します</p>
+  </div>
+
+  <div class="input-wrap">
+    <input
+      class="zip-input"
+      id="zipInput"
+      type="text"
+      inputmode="numeric"
+      maxlength="8"
+      placeholder="例）760-0001"
+      autocomplete="postal-code"
+    >
+    <button class="btn-search" id="searchBtn" onclick="doSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      検索
+    </button>
+  </div>
+
+  <div class="samples">
+    <span class="sample-label">サンプル ▶</span>
+    <button class="btn-sample" onclick="fillAndSearch('7600001')">高松市</button>
+    <button class="btn-sample" onclick="fillAndSearch('1000001')">東京・千代田</button>
+    <button class="btn-sample" onclick="fillAndSearch('5300001')">大阪市北区</button>
+    <button class="btn-sample" onclick="fillAndSearch('0600001')">札幌市</button>
+  </div>
+
+  <div class="result-box" id="resultBox">
+    <span class="state-idle">⬆ 郵便番号を入力して検索してください</span>
+  </div>
+</div>
+
+<footer>データ提供：zipcloud（キー不要API）</footer>
+
+<script>
+  const input = document.getElementById('zipInput');
+  const box   = document.getElementById('resultBox');
+
+  // Enterキー対応
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+  // 自動フォーマット（7桁入力でハイフン挿入）
+  input.addEventListener('input', () => {
+    let v = input.value.replace(/[^\d]/g, '');
+    if (v.length > 3) v = v.slice(0,3) + '-' + v.slice(3,7);
+    input.value = v;
+  });
+
+  function fillAndSearch(zip) {
+    const fmt = zip.slice(0,3) + '-' + zip.slice(3);
+    input.value = fmt;
+    doSearch();
+  }
+
+  function doSearch() {
+    const raw = input.value.replace(/-/g, '').trim();
+
+    if (!/^\d{7}$/.test(raw)) {
+      showError('7桁の数字で入力してください', '例：760-0001 または 7600001');
+      return;
+    }
+
+    showLoading();
+
+    const cbName = '__zc_' + Date.now();
+    const script = document.createElement('script');
+    script.src = `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${raw}&callback=${cbName}`;
+
+    const cleanup = () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+      delete window[cbName];
+    };
+
+    window[cbName] = data => {
+      cleanup();
+      if (data.status !== 200 || !data.results) {
+        showError('住所が見つかりませんでした', '郵便番号をご確認ください');
+      } else {
+        const r = data.results[0];
+        showResult(raw, r.address1, r.address2, r.address3);
+      }
+    };
+
+    script.onerror = () => {
+      cleanup();
+      showError('通信エラーが発生しました', 'インターネット接続を確認してください');
+    };
+
+    document.body.appendChild(script);
+  }
+
+  function showLoading() {
+    box.innerHTML = `
+      <div class="state-loading">
+        <div class="spinner"></div>
+        <span>検索中...</span>
+      </div>`;
+  }
+
+  function showResult(zip, pref, city, town) {
+    const zipFmt = zip.slice(0,3) + '-' + zip.slice(3);
+    const fullAddr = pref + city + town;
+    box.innerHTML = `
+      <div class="state-success">
+        <div class="zip-display">〒 ${zipFmt}</div>
+        <div class="pref">${pref}</div>
+        <div class="city">${city}</div>
+        <div class="town">${town}</div>
+        <button class="copy-btn" id="copyBtn" onclick="copyAddr('${fullAddr}')">📋 住所をコピー</button>
+      </div>`;
+  }
+
+  function showError(msg, sub) {
+    box.innerHTML = `
+      <div class="state-error">
+        <div class="error-icon">🔍</div>
+        <div class="error-msg">${msg}</div>
+        <div class="error-sub">${sub}</div>
+      </div>`;
+  }
+
+  function copyAddr(addr) {
+    navigator.clipboard.writeText(addr).then(() => {
+      const btn = document.getElementById('copyBtn');
+      if (!btn) return;
+      btn.textContent = '✅ コピーしました';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '📋 住所をコピー';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

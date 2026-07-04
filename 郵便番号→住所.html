@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>郵便番号 → 住所</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b9bdb;
+      font-size: 0.85rem;
+      margin-bottom: 28px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      font-size: 1.1rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #3b7dd8; }
+    button.search-btn {
+      padding: 14px 24px;
+      background: #2d6fd6;
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    button.search-btn:hover { background: #1e58b5; }
+    button.search-btn:active { background: #174fa0; }
+    .shortcuts {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .shortcut-btn {
+      padding: 6px 14px;
+      border: 1.5px solid #c8d8ef;
+      border-radius: 20px;
+      background: white;
+      color: #444;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .shortcut-btn:hover { background: #e8f0fb; }
+    .result-box {
+      background: #f7f9fc;
+      border-radius: 12px;
+      min-height: 90px;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .result-placeholder { color: #90aacb; font-size: 0.95rem; }
+    .result-address { font-size: 1.2rem; font-weight: 600; color: #222; line-height: 1.7; }
+    .result-error { color: #e05; font-size: 0.95rem; }
+    .footer {
+      text-align: center;
+      margin-top: 18px;
+      color: #aaa;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>郵便番号 → 住所</h1>
+    <p class="subtitle">zipcloud（APIキー不要）で住所を検索します</p>
+
+    <div class="input-row">
+      <input type="text" id="zipInput" placeholder="例）7600001" maxlength="8" inputmode="numeric">
+      <button class="search-btn" onclick="search()">検索</button>
+    </div>
+
+    <div class="shortcuts">
+      <button class="shortcut-btn" onclick="fillAndSearch('7600001')">高松市</button>
+      <button class="shortcut-btn" onclick="fillAndSearch('1000001')">東京・千代田</button>
+      <button class="shortcut-btn" onclick="fillAndSearch('5300001')">大阪市北区</button>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <span class="result-placeholder">7桁の郵便番号を入れて「検索」を押してください</span>
+    </div>
+
+    <p class="footer">データ提供：zipcloud ／ キー不要API（JSONP）</p>
+  </div>
+
+  <script>
+    document.getElementById('zipInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') search();
+    });
+
+    function fillAndSearch(zip) {
+      document.getElementById('zipInput').value = zip;
+      search();
+    }
+
+    function search() {
+      const raw = document.getElementById('zipInput').value.replace(/-/g, '').trim();
+      const box = document.getElementById('resultBox');
+
+      if (!/^\d{7}$/.test(raw)) {
+        box.innerHTML = '<span class="result-error">7桁の数字で入力してください（例：7600001）</span>';
+        return;
+      }
+
+      box.innerHTML = '<span class="result-placeholder">検索中...</span>';
+
+      const callbackName = 'zipCallback_' + Date.now();
+      const script = document.createElement('script');
+      script.src = `https://zipcloud.ibsnet.co.jp/api/search?zipcode=${raw}&callback=${callbackName}`;
+
+      window[callbackName] = function(data) {
+        document.body.removeChild(script);
+        delete window[callbackName];
+
+        if (data.status !== 200 || !data.results) {
+          box.innerHTML = '<span class="result-error">住所が見つかりませんでした。郵便番号を確認してください。</span>';
+          return;
+        }
+
+        const r = data.results[0];
+        const address = r.address1 + r.address2 + r.address3;
+        box.innerHTML = `<div class="result-address">〒${raw.slice(0,3)}-${raw.slice(3)}<br>${address}</div>`;
+      };
+
+      script.onerror = function() {
+        document.body.removeChild(script);
+        delete window[callbackName];
+        box.innerHTML = '<span class="result-error">通信エラーが発生しました。インターネット接続を確認してください。</span>';
+      };
+
+      document.body.appendChild(script);
+    }
+  </script>
+</body>
+</html>
